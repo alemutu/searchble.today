@@ -266,15 +266,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const { user } = get();
       if (!user) return;
       
+      console.log('Fetching profile for user ID:', user.id);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
-        .single();
+        .maybeSingle(); // Use maybeSingle instead of single to handle no rows case
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error in fetchUserProfile query:', error);
+        throw error;
+      }
       
       if (data) {
+        console.log('Profile data found:', data);
         set({
           isAdmin: data.role === 'admin' || data.role === 'super_admin',
           isDoctor: data.role === 'doctor',
@@ -283,15 +289,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         });
         
         await get().fetchCurrentHospital();
-      } else if (import.meta.env.DEV) {
+      } else {
+        console.log('No profile data found for user ID:', user.id);
         // Fallback to mock data in development
-        set({
-          isAdmin: true,
-          isDoctor: true,
-          isNurse: true,
-          isReceptionist: true,
-          hospital: mockHospital
-        });
+        if (import.meta.env.DEV) {
+          set({
+            isAdmin: true,
+            isDoctor: true,
+            isNurse: true,
+            isReceptionist: true,
+            hospital: mockHospital
+          });
+        }
       }
     } catch (error: any) {
       console.error('Error fetching user profile:', error.message);
@@ -318,27 +327,36 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         .from('profiles')
         .select('hospital_id')
         .eq('id', user.id)
-        .single();
+        .maybeSingle(); // Use maybeSingle instead of single
       
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Error fetching profile hospital_id:', profileError);
+        throw profileError;
+      }
       
       if (profile && profile.hospital_id) {
         const { data: hospital, error: hospitalError } = await supabase
           .from('hospitals')
           .select('*')
           .eq('id', profile.hospital_id)
-          .single();
+          .maybeSingle(); // Use maybeSingle instead of single
         
-        if (hospitalError) throw hospitalError;
+        if (hospitalError) {
+          console.error('Error fetching hospital:', hospitalError);
+          throw hospitalError;
+        }
         
         if (hospital) {
+          console.log('Hospital data found:', hospital);
           set({ hospital });
           // Save hospital to local storage for offline use
           localStorage.setItem(`hospitals_${hospital.id}`, JSON.stringify(hospital));
         } else if (import.meta.env.DEV) {
+          console.log('No hospital data found, using mock data');
           set({ hospital: mockHospital });
         }
       } else if (import.meta.env.DEV) {
+        console.log('No profile hospital_id found, using mock data');
         set({ hospital: mockHospital });
       }
     } catch (error: any) {

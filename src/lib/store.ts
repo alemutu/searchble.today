@@ -34,7 +34,23 @@ interface Hospital {
   patient_id_digits?: number;
   patient_id_auto_increment?: boolean;
   patient_id_last_number?: number;
+  domain_enabled?: boolean;
 }
+
+// Patient store for UI state management
+interface PatientStoreState {
+  currentSection: string;
+  currentDepartment: string | null;
+  setCurrentSection: (section: string) => void;
+  setCurrentDepartment: (department: string | null) => void;
+}
+
+export const usePatientStore = create<PatientStoreState>((set) => ({
+  currentSection: 'dashboard',
+  currentDepartment: null,
+  setCurrentSection: (section) => set({ currentSection: section }),
+  setCurrentDepartment: (department) => set({ currentDepartment: department })
+}));
 
 // Mock data for development
 const mockUser = {
